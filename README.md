@@ -1,67 +1,81 @@
-# Aura Widget — widget trình phát nhạc cho Android
+# Aura Widget
 
-Widget màn hình chính (home screen widget) điều khiển nhạc của **mọi app**: YouTube, YouTube Music, Spotify, Apple Music, SoundCloud, Zing MP3, trình phát nhạc máy…
+**A home-screen music widget for Android that controls any player:** YouTube, YouTube Music, Spotify, Apple Music,
+SoundCloud, Zing MP3, the stock player and more. Five hand-tuned themes, a live progress bar and an output-device
+picker. [Tiếng Việt](README.vi.md)
 
-## Tính năng
+## Themes
 
-| | |
+| Theme | Look |
 |---|---|
-| 5 theme | Liquid Glass · Nothing (font dot-matrix Doto) · Material You (màu từ hình nền, thanh sóng M3) · AMOLED · Album blur (nền là ảnh bìa làm mờ) |
-| Bắt media | `NotificationListenerService` + `MediaSessionManager` — tự chuyển sang app vừa bắt đầu phát |
-| Điều khiển | Phát/tạm dừng, bài trước/tiếp, chạm ảnh bìa để mở app nguồn |
-| Thanh tiến trình | Vẽ bằng bitmap, cập nhật mỗi giây khi đang phát và màn hình đang bật (tắt màn hình thì dừng để tiết kiệm pin) |
-| Chọn output | Nút tai nghe mở bottom sheet: danh sách thiết bị (loa, Bluetooth, tai nghe dây, USB, HDMI, cast), thanh âm lượng, nút mở bộ chuyển output của hệ thống |
+| Liquid Glass | Frosted layers, light rims and reflections over your wallpaper |
+| Nothing | Dot-matrix type (Doto) and monochrome accents |
+| Material You | Colours from your wallpaper, M3 wave progress bar |
+| AMOLED | True black, minimal |
+| Album blur | The current cover art, blurred, as the background |
+
+## Features
+
+- **Follows whatever is playing.** `NotificationListenerService` + `MediaSessionManager` pick up the active media
+  session and switch automatically to the app that just started playing.
+- **Controls:** play/pause, previous/next; tap the cover to open the source app.
+- **Progress bar** drawn as a bitmap per theme, updated every second while playing and paused when the screen is off
+  to save battery.
+- **Output picker:** a bottom sheet with every audio device (speaker, Bluetooth, wired, USB, HDMI, cast), a volume
+  slider and a shortcut to the system output switcher.
 
 ## Build
 
-1. Mở thư mục `AuraWidget` bằng **Android Studio** (Ladybug 2024.2 trở lên).
-2. Chờ Gradle sync (AGP 8.7.3, Kotlin 2.0.21, compileSdk 35, minSdk 26).
-3. Chạy `app` lên điện thoại, hoặc `Build → Build APK(s)`.
+Open the project in Android Studio (Ladybug 2024.2+) and run `app`, or from the command line:
 
-Dòng lệnh: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`
-
-## Lần đầu dùng
-
-1. Mở app **Aura Widget** → **Cấp quyền** → bật *Notification access* (quyền truy cập thông báo).
-   - Android 13+ với APK cài ngoài Play Store: nếu công tắc bị mờ ("Restricted setting"), vào *Thông tin app → ⋮ → Allow restricted settings*.
-2. Chọn theme → **Thêm widget vào màn hình chính** (hoặc nhấn giữ màn hình chính → Widget → Aura Player).
-3. Phát nhạc ở bất kỳ app nào; widget tự cập nhật.
-
-## Cấu trúc
-
-```
-media/MediaListenerService.kt   bắt media session, ticker 1 giây, theo dõi thiết bị âm thanh
-media/MediaRepository.kt        controller hiện tại + MediaSnapshot (tên bài, ảnh bìa, vị trí…)
-widget/WidgetUpdater.kt         dựng RemoteViews cho từng theme, cập nhật nhẹ mỗi giây
-widget/ProgressRenderer.kt      vẽ thanh tiến trình riêng cho từng theme
-widget/BitmapUtils.kt           bo góc ảnh bìa, blur nền album, lấy màu nhấn (Palette)
-widget/AuraWidgetProvider.kt    nhận cú bấm trên widget -> transportControls
-output/OutputSheetActivity.kt   bottom sheet chọn output (Compose)
-output/OutputSwitcher.kt        mở bộ chuyển output hệ thống theo phiên bản Android
-ui/MainActivity.kt              cấp quyền, chọn theme, xem trước widget thật
-tools/gen_layouts.py            sinh 5 layout widget (sửa thông số theme ở đây rồi chạy lại)
+```sh
+./gradlew assembleDebug    # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Giới hạn của Android (cần biết)
+AGP 8.7.3, Kotlin 2.0.21, compileSdk 35, minSdk 26.
 
-- **Lock screen**: app bên thứ ba không đặt được widget lên màn hình khóa trên điện thoại; player trong ảnh mẫu do ROM vẽ. Aura Widget nằm ở màn hình chính.
-- **Liquid Glass**: launcher không cho widget làm mờ hình nền phía sau, nên hiệu ứng kính được mô phỏng bằng các lớp trong suốt, viền sáng và vệt phản chiếu. Đẹp nhất trên hình nền có độ tương phản vừa phải.
-- **Chọn output**: app thường không được tự chuyển âm thanh của app khác (cần quyền hệ thống `MEDIA_CONTENT_CONTROL`). Aura liệt kê thiết bị, chỉnh âm lượng, và mở **bộ chuyển output của hệ thống**:
-  - Android 12–13: mở thẳng hộp thoại Media output của app đang phát (ROM gốc/Pixel; một số ROM bỏ qua).
-  - Android 14+: mở bộ chuyển output hệ thống (`MediaRouter2`) — hộp thoại chung, không gắn riêng app đang phát.
-  - Android 8–11 hoặc máy không hỗ trợ (một số ROM như MIUI/HyperOS, ColorOS): mở bảng âm lượng hoặc cài đặt Bluetooth.
-- **Font Doto** (theme Nothing) chỉ có Latin + Latin mở rộng: các chữ như ầ, ệ, ư, ơ sẽ dùng font hệ thống thay thế.
-- Kéo để tua (seek) không làm được trên widget (RemoteViews không nhận tọa độ chạm).
+## First run
 
-## Ý tưởng mở rộng
+1. Open **Aura Widget** → **Grant permission** → enable *Notification access*.
+   On Android 13+ with a sideloaded APK, if the switch is greyed out ("Restricted setting"), go to
+   *App info → ⋮ → Allow restricted settings*.
+2. Pick a theme → **Add widget to home screen** (or long-press the home screen → Widgets → Aura Player).
+3. Play music in any app; the widget updates on its own.
 
-- Theme riêng cho từng widget (màn hình cấu hình khi thêm widget)
-- Layout thu gọn 4×1 bằng responsive RemoteViews (Android 12+)
-- Nút like/shuffle qua `PlaybackState.customActions`
+## Code map
 
-## Tài liệu cho Claude Code
-- `CLAUDE.md` — hướng dẫn cho Claude Code (kiến trúc, build, ràng buộc)
-- `docs/HANDOFF.md` — tóm tắt cuộc hội thoại thiết kế và các quyết định
-- `docs/TODO.md` — việc tiếp theo theo thứ tự ưu tiên
-- `docs/design/` — mockup HTML, ảnh các theme, ảnh tham chiếu
-# one-player-widget
+```
+media/MediaListenerService.kt   media session capture, 1 s ticker, audio-device tracking
+media/MediaRepository.kt        current controller + MediaSnapshot (title, art, position…)
+widget/WidgetUpdater.kt         RemoteViews per theme, light per-second updates
+widget/ProgressRenderer.kt      per-theme progress bar rendering
+widget/BitmapUtils.kt           rounded art, album blur, accent colour (Palette)
+widget/AuraWidgetProvider.kt    widget taps → transportControls
+output/OutputSheetActivity.kt   output picker bottom sheet (Compose)
+output/OutputSwitcher.kt        opens the right system output switcher per Android version
+ui/MainActivity.kt              permissions, theme picker, live widget preview
+tools/gen_layouts.py            generates the five widget layouts (edit theme values here, then rerun)
+```
+
+## Android limits worth knowing
+
+- **Lock screen:** third-party apps cannot place widgets on the phone lock screen; Aura lives on the home screen.
+- **Liquid Glass:** launchers do not let widgets blur the wallpaper behind them, so the glass is simulated with
+  translucent layers, light rims and highlights. It looks best on wallpapers with moderate contrast.
+- **Output switching:** apps cannot route another app's audio without the system permission
+  `MEDIA_CONTENT_CONTROL`. Aura lists devices, adjusts volume and opens the system switcher: the app's media output
+  dialog on Android 12–13, the shared `MediaRouter2` switcher on 14+, and the volume panel or Bluetooth settings on
+  8–11 or on ROMs that do not support it.
+- **Doto font** (Nothing theme) covers Latin and Latin Extended only; Vietnamese letters fall back to the system font.
+- **Seeking by drag** is not possible on a widget (RemoteViews does not receive touch coordinates).
+
+## Ideas
+
+- Per-widget theme (configuration screen when adding a widget)
+- Compact 4×1 layout with responsive RemoteViews (Android 12+)
+- Like/shuffle buttons through `PlaybackState.customActions`
+
+## Notes for Claude Code
+
+`CLAUDE.md` (architecture, build, constraints), `docs/HANDOFF.md` (design decisions), `docs/TODO.md` (next steps),
+`docs/design/` (HTML mockups, theme screenshots, references).
